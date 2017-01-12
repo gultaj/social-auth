@@ -8,6 +8,11 @@ use App\Http\Controllers\Controller;
 
 class SocialLoginController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(['social', 'guest']);
+    }
+
     public function redirect($service, Request $request)
     {
         return \Socialite::driver($service)->redirect();
@@ -26,7 +31,7 @@ class SocialLoginController extends Controller
             ]);
         }
 
-        if ($this->needToCreateSocial($user, $service)) {
+        if (!$user->hasSocialLinked($service)) {
             $user->accounts()->create([
                 'social_id' => $serviceUser->getId(),
                 'service' => $service,
@@ -36,11 +41,6 @@ class SocialLoginController extends Controller
         \Auth::login($user);
 
         return redirect()->intended();
-    }
-
-    protected function needToCreateSocial(User $user, $service)
-    {
-        return !$user->hasSocialLinked($service);
     }
 
     protected function getExistingUser($serviceUser, $service)
